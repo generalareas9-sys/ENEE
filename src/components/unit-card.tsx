@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import { ArrowRight, CirclePlay } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { unitSlug } from "@/lib/videos/routes";
+import { cardEntrance } from "./page-motion";
+
+export function UnitCard({
+  stream,
+  grade,
+  subjectSlug,
+  unitNumber,
+  unitName,
+  lessonCount,
+  sampleOnly,
+}: {
+  stream: "natural" | "social";
+  grade: number;
+  subjectSlug: string;
+  unitNumber: number;
+  unitName: string;
+  lessonCount: number;
+  sampleOnly: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.div variants={cardEntrance} whileHover={reduceMotion ? undefined : { y: -3 }} whileTap={reduceMotion ? undefined : { scale: 0.99 }}>
+      <Link href={`/${stream}/${grade}/${subjectSlug}/${unitSlug(unitNumber)}`} className="group block rounded-2xl focus-visible:outline-none">
+        <Card className="flex min-h-32 items-center justify-between rounded-2xl border-border bg-card p-5 shadow-sm group-hover:border-primary/40">
+          <div className="flex items-center gap-4">
+            <span className="grid size-11 place-items-center rounded-xl bg-accent text-accent-foreground">
+              <CirclePlay aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <h3 className="font-display text-2xl font-semibold">
+                {unitName || (sampleOnly ? "Unit details pending" : `Unit ${unitNumber}`)}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {sampleOnly ? "SAMPLE entry · no real lesson provided" : `${lessonCount} ${lessonCount === 1 ? "lesson" : "lessons"}`}
+              </p>
+            </div>
+          </div>
+          <ArrowRight aria-hidden="true" className="text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+        </Card>
+      </Link>
+    </motion.div>
+  );
+}
