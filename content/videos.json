@@ -3,7 +3,9 @@
     "id": "sample-entry-1",
     "title": "SAMPLE ENTRY — lesson details pending",
     "grade": 9,
-    "streams": ["natural"],
+    "streams": [
+      "natural"
+    ],
     "subject": "Mathematics",
     "unitNumber": 1,
     "unitName": "",
@@ -21,7 +23,9 @@
     "id": "sample-entry-2",
     "title": "SAMPLE ENTRY — lesson details pending",
     "grade": 10,
-    "streams": ["natural"],
+    "streams": [
+      "natural"
+    ],
     "subject": "Chemistry",
     "unitNumber": 1,
     "unitName": "",
@@ -39,7 +43,9 @@
     "id": "sample-entry-3",
     "title": "SAMPLE ENTRY — lesson details pending",
     "grade": 11,
-    "streams": ["social"],
+    "streams": [
+      "social"
+    ],
     "subject": "Geography",
     "unitNumber": 1,
     "unitName": "",
@@ -48,6 +54,87 @@
     "youtubeId": "",
     "channelName": "",
     "channelUrl": "",
+    "curriculum": "unknown",
+    "language": "",
+    "embeddable": false,
+    "verificationStatus": "needs_verification"
+  },
+  {
+    "id": "youtube-playlist-PLtpriW2pnN_5uhW63sx7xF-mndDzpv8fp",
+    "title": "grade 11 biology unit 6",
+    "grade": 11,
+    "streams": [
+      "natural"
+    ],
+    "subject": "Biology",
+    "unitNumber": 6,
+    "unitName": "Population & Natural Resources",
+    "lessonNumber": 1,
+    "youtubeType": "playlist",
+    "youtubeId": "PLtpriW2pnN_5uhW63sx7xF-mndDzpv8fp",
+    "channelName": "Z Secret Training Institute",
+    "channelUrl": "https://www.youtube.com/@zsecrettraininginstitute",
+    "curriculum": "unknown",
+    "language": "",
+    "embeddable": false,
+    "verificationStatus": "needs_verification"
+  },
+  {
+    "id": "youtube-playlist-PLtpriW2pnN_56QVGvguHbm9RY-UK42608",
+    "title": "Grade 11 Biology Unit 5",
+    "grade": 11,
+    "streams": [
+      "natural"
+    ],
+    "subject": "Biology",
+    "unitNumber": 5,
+    "unitName": "The human body systems",
+    "lessonNumber": 1,
+    "youtubeType": "playlist",
+    "youtubeId": "PLtpriW2pnN_56QVGvguHbm9RY-UK42608",
+    "channelName": "Z Secret Training Institute",
+    "channelUrl": "https://www.youtube.com/@zsecrettraininginstitute",
+    "curriculum": "unknown",
+    "language": "",
+    "embeddable": false,
+    "verificationStatus": "needs_verification"
+  },
+  {
+    "id": "youtube-playlist-PLtpriW2pnN_5NTPKH2Vm5DvIg3qCiQem4",
+    "title": "Grade 11 Biology New curriculum",
+    "grade": 11,
+    "streams": [
+      "natural"
+    ],
+    "subject": "Biology",
+    "unitNumber": 4,
+    "unitName": "Genetics",
+    "lessonNumber": 1,
+    "youtubeType": "playlist",
+    "youtubeId": "PLtpriW2pnN_5NTPKH2Vm5DvIg3qCiQem4",
+    "channelName": "Z Secret Training Institute",
+    "channelUrl": "https://www.youtube.com/@zsecrettraininginstitute",
+    "curriculum": "new",
+    "language": "",
+    "embeddable": false,
+    "verificationStatus": "needs_verification"
+  },
+  {
+    "id": "youtube-playlist-PLtpriW2pnN_6foGFrPoLTvZwj7C-xXLtL",
+    "title": "Live Mathematics grade 11 revision class",
+    "grade": 11,
+    "streams": [
+      "natural",
+      "social"
+    ],
+    "subject": "Mathematics",
+    "unitNumber": 9,
+    "unitName": "Unit 9",
+    "lessonNumber": 1,
+    "youtubeType": "playlist",
+    "youtubeId": "PLtpriW2pnN_6foGFrPoLTvZwj7C-xXLtL",
+    "channelName": "Z Secret Training Institute",
+    "channelUrl": "https://www.youtube.com/@zsecrettraininginstitute",
     "curriculum": "unknown",
     "language": "",
     "embeddable": false,

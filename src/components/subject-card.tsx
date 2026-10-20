@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import type { Subject } from "@/lib/videos/schema";
 import { slugifySubject } from "@/lib/videos/routes";
 import { cardEntrance } from "./page-motion";
@@ -13,11 +14,13 @@ export function SubjectCard({
   grade,
   subject,
   available,
+  needsVerification,
 }: {
   stream: "natural" | "social";
   grade: number;
   subject: Subject;
   available: boolean;
+  needsVerification: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   return (
@@ -30,7 +33,10 @@ export function SubjectCard({
             </span>
             <div>
               <h3 className="text-lg font-bold">{subject}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{available ? "Lessons available" : "Videos coming soon"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {available ? needsVerification ? "Lessons need review" : "Lessons available" : "Videos coming soon"}
+              </p>
+              {needsVerification && <Badge variant="warning" className="mt-2 text-[10px]">Needs verification</Badge>}
             </div>
           </div>
           <ArrowUpRight aria-hidden="true" className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" size={19} />

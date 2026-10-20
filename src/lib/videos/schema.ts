@@ -13,6 +13,7 @@ export const subjectSchema = z.enum([
   "History",
   "Economics",
 ]);
+export const curriculumSchema = z.enum(["new", "old", "unknown"]);
 
 const naturalOnlySubjects = ["Physics", "Chemistry", "Biology"] as const;
 const socialOnlySubjects = ["Geography", "History", "Economics"] as const;
@@ -31,7 +32,7 @@ export const videoSchema = z
     youtubeId: z.string(),
     channelName: z.string(),
     channelUrl: z.string().refine((value) => value === "" || z.url().safeParse(value).success),
-    curriculum: z.enum(["new", "old", "unknown"]),
+    curriculum: curriculumSchema,
     language: z.string(),
     embeddable: z.boolean(),
     verificationStatus: z.enum(["needs_verification", "verified"]),

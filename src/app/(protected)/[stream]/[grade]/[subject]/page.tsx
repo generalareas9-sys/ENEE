@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, BackButton } from "@/components/breadcrumb";
+import { ChannelCredits } from "@/components/channel-credits";
 import { EmptyState } from "@/components/empty-state";
 import { StaggerGrid } from "@/components/page-motion";
 import { UnitCard } from "@/components/unit-card";
@@ -50,9 +51,6 @@ export default async function SubjectPage({
         <StaggerGrid>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {units.map(([unitNumber, unitVideos]) => {
-              const publishedLessons = unitVideos.filter((video) =>
-                video.youtubeId.length > 0 && video.verificationStatus === "verified",
-              ).length;
               const sampleOnly = unitVideos.every((video) => !video.youtubeId);
               return (
                 <UnitCard
@@ -62,8 +60,9 @@ export default async function SubjectPage({
                   subjectSlug={subjectValue}
                   unitNumber={unitNumber}
                   unitName={unitVideos.find((video) => video.unitName)?.unitName ?? ""}
-                  lessonCount={publishedLessons}
+                  playlistCount={unitVideos.filter((video) => video.youtubeId.length > 0).length}
                   sampleOnly={sampleOnly}
+                  needsVerification={unitVideos.some((video) => video.verificationStatus === "needs_verification")}
                 />
               );
             })}
@@ -72,6 +71,7 @@ export default async function SubjectPage({
       ) : (
         <div className="mt-8"><EmptyState /></div>
       )}
+      <ChannelCredits videos={subjectVideos} />
     </section>
   );
 }

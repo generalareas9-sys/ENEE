@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, BackButton } from "@/components/breadcrumb";
+import { ChannelCredits } from "@/components/channel-credits";
 import { EmptyState } from "@/components/empty-state";
 import { SubjectCard } from "@/components/subject-card";
 import { StaggerGrid } from "@/components/page-motion";
@@ -38,16 +39,33 @@ export default async function GradePage({
                 video.grade === grade &&
                 video.subject === subject &&
                 video.streams.includes(stream) &&
-                video.youtubeId.length > 0 &&
-                video.verificationStatus === "verified",
+                video.youtubeId.length > 0,
               );
-              return <SubjectCard key={subject} stream={stream} grade={grade} subject={subject} available={available} />;
+              const needsVerification = videos.some((video) =>
+                video.grade === grade &&
+                video.subject === subject &&
+                video.streams.includes(stream) &&
+                video.verificationStatus === "needs_verification",
+              );
+              return (
+                <SubjectCard
+                  key={subject}
+                  stream={stream}
+                  grade={grade}
+                  subject={subject}
+                  available={available}
+                  needsVerification={needsVerification}
+                />
+              );
             })}
           </div>
         </StaggerGrid>
       ) : (
         <div className="mt-8"><EmptyState /></div>
       )}
+      <ChannelCredits videos={videos.filter((video) =>
+        video.grade === grade && video.streams.includes(stream),
+      )} />
     </section>
   );
 }

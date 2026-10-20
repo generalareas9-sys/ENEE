@@ -15,20 +15,30 @@ function youtubeUrl(video: Video): string | null {
     : `https://www.youtube.com/watch?v=${encodeURIComponent(video.youtubeId)}`;
 }
 
-function embedUrl(video: Video): string | null {
+function embedUrl(video: Video, startIndex: number): string | null {
   if (!video.youtubeId || !video.embeddable) return null;
   const base =
     video.youtubeType === "playlist"
-      ? `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(video.youtubeId)}`
+      ? `https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(video.youtubeId)}&index=${Math.max(0, startIndex)}`
       : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.youtubeId)}`;
   return `${base}&autoplay=1&rel=0`;
 }
 
-export function VideoPlayer({ video }: { video: Video }) {
+export function VideoPlayer({
+  video,
+  startIndex = 0,
+  title,
+  thumbnailVideoId,
+}: {
+  video: Video;
+  startIndex?: number;
+  title?: string;
+  thumbnailVideoId?: string;
+}) {
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
   const openUrl = youtubeUrl(video);
-  const src = embedUrl(video);
+  const src = embedUrl(video, startIndex);
   const hasLesson = Boolean(video.youtubeId);
 
   return (
@@ -42,7 +52,7 @@ export function VideoPlayer({ video }: { video: Video }) {
             {playing && src && !failed ? (
               <iframe
                 src={src}
-                title={video.title || "YouTube lesson"}
+                title={title || video.title || "YouTube lesson"}
                 className="absolute inset-0 size-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerPolicy="strict-origin-when-cross-origin"
@@ -51,9 +61,9 @@ export function VideoPlayer({ video }: { video: Video }) {
               />
             ) : (
               <div className="absolute inset-0 grid place-items-center overflow-hidden bg-[radial-gradient(ellipse_at_top,#315c49,#101815_70%)]">
-                {video.youtubeType === "video" && (
+                {thumbnailVideoId && (
                   <Image
-                    src={`https://i.ytimg.com/vi/${encodeURIComponent(video.youtubeId)}/hqdefault.jpg`}
+                    src={`https://i.ytimg.com/vi/${encodeURIComponent(thumbnailVideoId)}/hqdefault.jpg`}
                     alt={`Thumbnail for ${video.title || "YouTube lesson"}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 70vw"
@@ -112,7 +122,7 @@ export function VideoPlayer({ video }: { video: Video }) {
 
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold">{video.title || "Video lesson coming soon"}</h2>
+          <h2 className="text-lg font-bold">{title || video.title || "Video lesson coming soon"}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {video.channelName && video.channelUrl ? (
               <>Credit: <a href={video.channelUrl} target="_blank" rel="noreferrer" className="font-semibold text-primary underline-offset-4 hover:underline">{video.channelName} <ArrowUpRight aria-hidden="true" className="inline" size={13} /></a></>

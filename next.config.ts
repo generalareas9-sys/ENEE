@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingIncludes: {
+    "/[stream]/[grade]/[subject]/[unit]": ["./content/import/raw-youtube.json"],
+  },
   turbopack: {
     root: process.cwd(),
     rules: {

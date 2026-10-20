@@ -7,13 +7,15 @@ import { EmptyState } from "@/components/empty-state";
 import { videos } from "@/lib/videos/catalog";
 
 export default function AboutPage() {
-  const credits = Array.from(
-    new Map(
-      videos
-        .filter((video) => video.channelName && video.channelUrl)
-        .map((video) => [video.channelUrl, { name: video.channelName, url: video.channelUrl }]),
-    ).values(),
-  );
+  const credits = Array.from(new Map([
+    ["https://www.youtube.com/@zsecrettraininginstitute", {
+      name: "@zsecrettraininginstitute",
+      url: "https://www.youtube.com/@zsecrettraininginstitute",
+    }],
+    ...videos
+      .filter((video) => video.channelName && video.channelUrl)
+      .map((video) => [video.channelUrl, { name: video.channelName, url: video.channelUrl }] as const),
+  ]).values());
 
   return (
     <>
@@ -36,7 +38,7 @@ export default function AboutPage() {
             <article className="rounded-3xl border border-border bg-card p-6">
               <ShieldCheck aria-hidden="true" className="text-primary" size={25} />
               <h2 className="mt-4 font-display text-2xl font-semibold">Clear, honest catalog</h2>
-              <p className="mt-2 leading-7 text-muted-foreground">Only sample placeholders are included at launch. Real channel credits and lesson details will appear when verified sources are provided.</p>
+              <p className="mt-2 leading-7 text-muted-foreground">Collected playlists are review-only until approved. Unverified entries are clearly marked, and original channel credits are shown throughout the course.</p>
             </article>
           </div>
           <section className="mt-12" aria-labelledby="credits-heading">

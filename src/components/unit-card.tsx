@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CirclePlay } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { unitSlug } from "@/lib/videos/routes";
 import { cardEntrance } from "./page-motion";
 
@@ -13,16 +14,18 @@ export function UnitCard({
   subjectSlug,
   unitNumber,
   unitName,
-  lessonCount,
+  playlistCount,
   sampleOnly,
+  needsVerification,
 }: {
   stream: "natural" | "social";
   grade: number;
   subjectSlug: string;
   unitNumber: number;
   unitName: string;
-  lessonCount: number;
+  playlistCount: number;
   sampleOnly: boolean;
+  needsVerification: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   return (
@@ -38,8 +41,11 @@ export function UnitCard({
                 {unitName || (sampleOnly ? "Unit details pending" : `Unit ${unitNumber}`)}
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {sampleOnly ? "SAMPLE entry · no real lesson provided" : `${lessonCount} ${lessonCount === 1 ? "lesson" : "lessons"}`}
+                {sampleOnly
+                  ? "SAMPLE entry · no real lesson provided"
+                  : `${playlistCount} ${playlistCount === 1 ? "playlist" : "playlists"}`}
               </p>
+              {needsVerification && <Badge variant="warning" className="mt-2">Needs verification</Badge>}
             </div>
           </div>
           <ArrowRight aria-hidden="true" className="text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />

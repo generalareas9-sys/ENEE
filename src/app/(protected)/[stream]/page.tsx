@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { Breadcrumb, BackButton } from "@/components/breadcrumb";
+import { ChannelCredits } from "@/components/channel-credits";
 import { GradeCard } from "@/components/grade-card";
 import { StaggerGrid } from "@/components/page-motion";
-import { isKnownStream } from "@/lib/videos/catalog";
+import { isKnownStream, videos } from "@/lib/videos/catalog";
 
 const streamName = {
   natural: "Natural Science",
@@ -33,6 +34,7 @@ export default async function StreamPage({
           {[9, 10, 11, 12].map((grade) => <GradeCard key={grade} stream={stream} grade={grade} />)}
         </div>
       </StaggerGrid>
+      <ChannelCredits videos={videos.filter((video) => video.streams.includes(stream))} />
     </section>
   );
 }

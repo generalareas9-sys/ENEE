@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Breadcrumb, BackButton } from "@/components/breadcrumb";
+import { ChannelCredits } from "@/components/channel-credits";
 import { EmptyState } from "@/components/empty-state";
 import { LessonList, type LessonLink } from "@/components/lesson-list";
 import { VideoPlayer } from "@/components/video-player";
+import { readRawPlaylistCatalog, type RawPlaylistVideo } from "@/lib/videos/raw-import.server";
 import { Button } from "@/components/ui/button";
 import {
   isKnownStream,
@@ -52,27 +54,54 @@ export default async function UnitPage({
           { label: `Unit ${unitNumber}` },
         ]} />
         <EmptyState />
+        <ChannelCredits videos={[]} />
       </section>
     );
   }
 
-  const selectedIndex = unitVideos.findIndex((video) => video.id === query.lesson);
+  const rawCatalog = await readRawPlaylistCatalog();
+  const lessons = unitVideos.flatMap((video) => {
+    if (video.youtubeType === "playlist") {
+      const rawPlaylist = rawCatalog?.find((playlist) => playlist.playlistId === video.youtubeId);
+      const rawLessons = rawPlaylist?.videos.toSorted((a, b) => a.position - b.position) ?? [];
+      if (rawLessons.length) {
+        return rawLessons.map((rawVideo: RawPlaylistVideo, index) => ({
+          key: `${video.id}:${rawVideo.videoId}`,
+          video,
+          title: rawVideo.title || "Video lesson coming soon",
+          lessonNumber: index + 1,
+          startIndex: rawVideo.position,
+          thumbnailVideoId: rawVideo.videoId,
+        }));
+      }
+    }
+    return [{
+      key: video.id,
+      video,
+      title: video.title || "Video lesson coming soon",
+      lessonNumber: video.lessonNumber,
+      startIndex: 0,
+      thumbnailVideoId: video.youtubeType === "video" ? video.youtubeId : undefined,
+    }];
+  });
+  const selectedIndex = lessons.findIndex((lesson) => lesson.key === query.lesson);
   const currentIndex = selectedIndex >= 0 ? selectedIndex : 0;
-  const currentVideo = unitVideos[currentIndex];
+  const currentLesson = lessons[currentIndex];
+  const currentVideo = currentLesson.video;
   const sampleOnly = unitVideos.every((video) => !video.youtubeId);
   const unitName = unitVideos.find((video) => video.unitName)?.unitName;
   const unitLabel = unitName || (sampleOnly ? "Unit details pending" : `Unit ${unitNumber}`);
   const unitHref = `/${stream}/${grade}/${subjectValue}/${unitValue}`;
-  const lessonLinks: LessonLink[] = unitVideos.map((video, index) => ({
-    id: video.id,
-    title: video.title || "Video lesson coming soon",
-    href: `${unitHref}?lesson=${encodeURIComponent(video.id)}`,
-    lessonNumber: video.lessonNumber,
+  const lessonLinks: LessonLink[] = lessons.map((lesson, index) => ({
+    id: lesson.key,
+    title: lesson.title,
+    href: `${unitHref}?lesson=${encodeURIComponent(lesson.key)}`,
+    lessonNumber: lesson.lessonNumber,
     active: index === currentIndex,
-    needsVerification: video.verificationStatus === "needs_verification",
+    needsVerification: lesson.video.verificationStatus === "needs_verification",
   }));
-  const previous = unitVideos[currentIndex - 1];
-  const next = unitVideos[currentIndex + 1];
+  const previous = lessons[currentIndex - 1];
+  const next = lessons[currentIndex + 1];
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 md:py-12">
@@ -90,22 +119,28 @@ export default async function UnitPage({
       </div>
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.62fr)]">
         <div className="space-y-6">
-          <VideoPlayer video={currentVideo} />
+          <VideoPlayer
+            video={currentVideo}
+            startIndex={currentLesson.startIndex}
+            title={currentLesson.title}
+            thumbnailVideoId={currentLesson.thumbnailVideoId}
+          />
           <div className="flex flex-col justify-between gap-3 border-t border-border pt-5 sm:flex-row">
             {previous ? (
               <Button asChild variant="outline">
-                <Link href={`${unitHref}?lesson=${encodeURIComponent(previous.id)}`}><ArrowLeft aria-hidden="true" /> Previous lesson</Link>
+                <Link href={`${unitHref}?lesson=${encodeURIComponent(previous.key)}`}><ArrowLeft aria-hidden="true" /> Previous lesson</Link>
               </Button>
             ) : <span />}
             {next ? (
               <Button asChild>
-                <Link href={`${unitHref}?lesson=${encodeURIComponent(next.id)}`}>Next lesson <ArrowRight aria-hidden="true" /></Link>
+                <Link href={`${unitHref}?lesson=${encodeURIComponent(next.key)}`}>Next lesson <ArrowRight aria-hidden="true" /></Link>
               </Button>
             ) : <span />}
           </div>
         </div>
         <LessonList lessons={lessonLinks} />
       </div>
+      <ChannelCredits videos={unitVideos} />
     </section>
   );
 }
