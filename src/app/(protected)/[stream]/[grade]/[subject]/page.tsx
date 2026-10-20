@@ -1,0 +1,77 @@
+import { notFound } from "next/navigation";
+import { Breadcrumb, BackButton } from "@/components/breadcrumb";
+import { EmptyState } from "@/components/empty-state";
+import { StaggerGrid } from "@/components/page-motion";
+import { UnitCard } from "@/components/unit-card";
+import {
+  isKnownStream,
+  parseGrade,
+  parseSubjectSlug,
+  videosForPath,
+} from "@/lib/videos/catalog";
+
+const streamName = { natural: "Natural Science", social: "Social Science" } as const;
+
+export default async function SubjectPage({
+  params,
+}: {
+  params: Promise<{ stream: string; grade: string; subject: string }>;
+}) {
+  const { stream: streamValue, grade: gradeValue, subject: subjectValue } = await params;
+  if (!isKnownStream(streamValue)) notFound();
+  const stream = streamValue;
+  const grade = parseGrade(gradeValue);
+  if (!grade) notFound();
+  const subject = parseSubjectSlug(subjectValue, stream);
+  if (!subject) notFound();
+  const subjectVideos = videosForPath(stream, grade, subject);
+  const units = Array.from(
+    subjectVideos.reduce((groups, video) => {
+      const existing = groups.get(video.unitNumber) ?? [];
+      existing.push(video);
+      groups.set(video.unitNumber, existing);
+      return groups;
+    }, new Map<number, typeof subjectVideos>()),
+  ).sort(([a], [b]) => a - b);
+
+  return (
+    <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 md:py-12">
+      <BackButton href={`/${stream}/${grade}`} />
+      <Breadcrumb items={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: streamName[stream], href: `/${stream}` },
+        { label: `Grade ${grade}`, href: `/${stream}/${grade}` },
+        { label: subject },
+      ]} />
+      <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">Course units</p>
+      <h1 className="mt-2 font-display text-5xl font-semibold sm:text-6xl">{subject}</h1>
+      <p className="mt-3 leading-7 text-muted-foreground">Grade {grade} · Select a unit to view its video lessons.</p>
+      {units.length ? (
+        <StaggerGrid>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {units.map(([unitNumber, unitVideos]) => {
+              const publishedLessons = unitVideos.filter((video) =>
+                video.youtubeId.length > 0 && video.verificationStatus === "verified",
+              ).length;
+              const sampleOnly = unitVideos.every((video) => !video.youtubeId);
+              return (
+                <UnitCard
+                  key={unitNumber}
+                  stream={stream}
+                  grade={grade}
+                  subjectSlug={subjectValue}
+                  unitNumber={unitNumber}
+                  unitName={unitVideos.find((video) => video.unitName)?.unitName ?? ""}
+                  lessonCount={publishedLessons}
+                  sampleOnly={sampleOnly}
+                />
+              );
+            })}
+          </div>
+        </StaggerGrid>
+      ) : (
+        <div className="mt-8"><EmptyState /></div>
+      )}
+    </section>
+  );
+}
