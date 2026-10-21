@@ -22,6 +22,7 @@ export const videoSchema = z
   .object({
     id: z.string().min(1),
     title: z.string(),
+    courseLabel: z.enum(["Course A", "Course B"]).optional(),
     grade: z.number().int().min(9).max(12),
     streams: z.array(streamSchema).min(1).refine((streams) => new Set(streams).size === streams.length),
     subject: subjectSchema,
