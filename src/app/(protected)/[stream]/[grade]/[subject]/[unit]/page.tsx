@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { LessonList, type LessonLink } from "@/components/lesson-list";
 import { VideoPlayer } from "@/components/video-player";
 import { readRawPlaylistCatalog, type RawPlaylistVideo } from "@/lib/videos/raw-import.server";
+import { groupPlaylistLessons } from "@/lib/videos/playlist-units";
 import { Button } from "@/components/ui/button";
 import {
   isKnownStream,
@@ -23,7 +24,7 @@ export default async function UnitPage({
   searchParams,
 }: {
   params: Promise<{ stream: string; grade: string; subject: string; unit: string }>;
-  searchParams: Promise<{ lesson?: string }>;
+  searchParams: Promise<{ lesson?: string; course?: string }>;
 }) {
   const [
     { stream: streamValue, grade: gradeValue, subject: subjectValue, unit: unitValue },
@@ -41,6 +42,7 @@ export default async function UnitPage({
   const subjectVideos = videosForPath(stream, grade, subject);
   const unitVideos = subjectVideos
     .filter((video) => video.unitNumber === unitNumber)
+    .filter((video) => !query.course || video.id === query.course)
     .sort((a, b) => a.lessonNumber - b.lessonNumber);
   if (!unitVideos.length) {
     return (
@@ -63,15 +65,20 @@ export default async function UnitPage({
   const lessons = unitVideos.flatMap((video) => {
     if (video.youtubeType === "playlist") {
       const rawPlaylist = rawCatalog?.find((playlist) => playlist.playlistId === video.youtubeId);
-      const rawLessons = rawPlaylist?.videos.toSorted((a, b) => a.position - b.position) ?? [];
+      const group = rawPlaylist
+        ? groupPlaylistLessons(rawPlaylist.videos, rawPlaylist.playlistTitle).groups
+          .find((candidate) => candidate.unitNumber === video.unitNumber)
+        : undefined;
+      const rawLessons = group?.lessons.toSorted((a, b) => a.position - b.position) ?? [];
       if (rawLessons.length) {
         return rawLessons.map((rawVideo: RawPlaylistVideo, index) => ({
           key: `${video.id}:${rawVideo.videoId}`,
-          video,
+          video: { ...video, embeddable: rawVideo.embeddable },
           title: rawVideo.title || "Video lesson coming soon",
           lessonNumber: index + 1,
           startIndex: rawVideo.position,
           thumbnailVideoId: rawVideo.videoId,
+          youtubeVideoId: rawVideo.videoId,
         }));
       }
     }
@@ -82,6 +89,7 @@ export default async function UnitPage({
       lessonNumber: video.lessonNumber,
       startIndex: 0,
       thumbnailVideoId: video.youtubeType === "video" ? video.youtubeId : undefined,
+      youtubeVideoId: video.youtubeType === "video" ? video.youtubeId : undefined,
     }];
   });
   const selectedIndex = lessons.findIndex((lesson) => lesson.key === query.lesson);
@@ -91,11 +99,13 @@ export default async function UnitPage({
   const sampleOnly = unitVideos.every((video) => !video.youtubeId);
   const unitName = unitVideos.find((video) => video.unitName)?.unitName;
   const unitLabel = unitName || (sampleOnly ? "Unit details pending" : `Unit ${unitNumber}`);
-  const unitHref = `/${stream}/${grade}/${subjectValue}/${unitValue}`;
+  const unitHref = `/${stream}/${grade}/${subjectValue}/${unitValue}${query.course ? `?course=${encodeURIComponent(query.course)}` : ""}`;
+  const lessonHref = (lessonKey: string) =>
+    `${unitHref}${query.course ? "&" : "?"}lesson=${encodeURIComponent(lessonKey)}`;
   const lessonLinks: LessonLink[] = lessons.map((lesson, index) => ({
     id: lesson.key,
     title: lesson.title,
-    href: `${unitHref}?lesson=${encodeURIComponent(lesson.key)}`,
+    href: lessonHref(lesson.key),
     lessonNumber: lesson.lessonNumber,
     active: index === currentIndex,
     needsVerification: lesson.video.verificationStatus === "needs_verification",
@@ -114,7 +124,10 @@ export default async function UnitPage({
         { label: unitLabel },
       ]} />
       <div className="mb-7">
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">{subject} · Grade {grade}</p>
+        <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">
+          {currentVideo.courseLabel ? `${currentVideo.courseLabel} · ` : ""}
+          {subject} · Grade {grade}
+        </p>
         <h1 className="mt-2 font-display text-4xl font-semibold sm:text-5xl">{unitLabel}</h1>
       </div>
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.62fr)]">
@@ -124,16 +137,17 @@ export default async function UnitPage({
             startIndex={currentLesson.startIndex}
             title={currentLesson.title}
             thumbnailVideoId={currentLesson.thumbnailVideoId}
+            youtubeVideoId={currentLesson.youtubeVideoId}
           />
           <div className="flex flex-col justify-between gap-3 border-t border-border pt-5 sm:flex-row">
             {previous ? (
               <Button asChild variant="outline">
-                <Link href={`${unitHref}?lesson=${encodeURIComponent(previous.key)}`}><ArrowLeft aria-hidden="true" /> Previous lesson</Link>
+                <Link href={lessonHref(previous.key)}><ArrowLeft aria-hidden="true" /> Previous lesson</Link>
               </Button>
             ) : <span />}
             {next ? (
               <Button asChild>
-                <Link href={`${unitHref}?lesson=${encodeURIComponent(next.key)}`}>Next lesson <ArrowRight aria-hidden="true" /></Link>
+                <Link href={lessonHref(next.key)}>Next lesson <ArrowRight aria-hidden="true" /></Link>
               </Button>
             ) : <span />}
           </div>
