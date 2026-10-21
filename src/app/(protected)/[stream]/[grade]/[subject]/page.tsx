@@ -28,12 +28,18 @@ export default async function SubjectPage({
   const subjectVideos = videosForPath(stream, grade, subject);
   const units = Array.from(
     subjectVideos.reduce((groups, video) => {
-      const existing = groups.get(video.unitNumber) ?? [];
+      const key = video.courseLabel
+        ? `${video.youtubeId}:${video.unitNumber}`
+        : `unit:${video.unitNumber}`;
+      const existing = groups.get(key) ?? [];
       existing.push(video);
-      groups.set(video.unitNumber, existing);
+      groups.set(key, existing);
       return groups;
-    }, new Map<number, typeof subjectVideos>()),
-  ).sort(([a], [b]) => a - b);
+    }, new Map<string, typeof subjectVideos>()),
+  ).sort(([, left], [, right]) =>
+    left[0].unitNumber - right[0].unitNumber ||
+    (left[0].courseLabel ?? "").localeCompare(right[0].courseLabel ?? ""),
+  );
 
   return (
     <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 md:py-12">
@@ -50,16 +56,19 @@ export default async function SubjectPage({
       {units.length ? (
         <StaggerGrid>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {units.map(([unitNumber, unitVideos]) => {
+            {units.map(([groupKey, unitVideos]) => {
+              const unitNumber = unitVideos[0].unitNumber;
               const sampleOnly = unitVideos.every((video) => !video.youtubeId);
               return (
                 <UnitCard
-                  key={unitNumber}
+                  key={groupKey}
                   stream={stream}
                   grade={grade}
                   subjectSlug={subjectValue}
                   unitNumber={unitNumber}
                   unitName={unitVideos.find((video) => video.unitName)?.unitName ?? ""}
+                  courseLabel={unitVideos[0].courseLabel}
+                  courseKey={unitVideos[0].courseLabel ? unitVideos[0].id : undefined}
                   playlistCount={unitVideos.filter((video) => video.youtubeId.length > 0).length}
                   sampleOnly={sampleOnly}
                   needsVerification={unitVideos.some((video) => video.verificationStatus === "needs_verification")}
