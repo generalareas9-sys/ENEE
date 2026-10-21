@@ -130,7 +130,8 @@ export function VideoLibrary({ videos }: { videos: Video[] }) {
         <ul className="mt-6 grid gap-4 md:grid-cols-2">
           {results.map((video) => {
             const preferredStream = video.streams[0] as Stream;
-            const href = `/${preferredStream}/${video.grade}/${slugifySubject(video.subject)}/${unitSlug(video.unitNumber)}`;
+            const courseQuery = video.courseLabel ? `?course=${encodeURIComponent(video.id)}` : "";
+            const href = `/${preferredStream}/${video.grade}/${slugifySubject(video.subject)}/${unitSlug(video.unitNumber)}${courseQuery}`;
             return (
               <li key={video.id} className="rounded-3xl border border-border bg-card p-5 shadow-sm">
                 <div className="flex items-start gap-4">
@@ -144,7 +145,10 @@ export function VideoLibrary({ videos }: { videos: Video[] }) {
                         : <Badge variant="success">Verified</Badge>}
                       {!video.embeddable && video.youtubeId && <Badge variant="outline">Open on YouTube</Badge>}
                     </div>
-                    <h2 className="mt-3 break-words font-display text-2xl font-semibold">{video.title || "Video lesson coming soon"}</h2>
+                    <h2 className="mt-3 break-words font-display text-2xl font-semibold">
+                      {video.courseLabel ? `${video.courseLabel} — ` : ""}
+                      {video.title || "Video lesson coming soon"}
+                    </h2>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
                       Grade {video.grade} · {video.streams.join(" & ")} · {video.subject} · Unit {video.unitNumber}{video.unitName ? `: ${video.unitName}` : ""}
                     </p>
