@@ -46,7 +46,7 @@ npm run dev
    ```powershell
    npm run import:reviewed
    ```
-   This imports only approved rows, validates them with the catalog Zod schema, prints CSV row numbers for invalid approvals, and does not write any changes if there are validation errors. Repeated imports preserve entries already in the catalog instead of duplicating or overwriting them. Imported entries stay `needs_verification` until separately verified.
+   This imports only approved rows, validates them with the catalog Zod schema, and prints CSV row numbers for invalid approvals. Playlists with unit references in their video titles are split into title-backed unit entries; playlists without unit references receive one `Full Course` unit. Unitless lessons in a playlist that otherwise has unit references are not assigned to a guessed unit. Repeated imports preserve entries already in the catalog instead of duplicating or overwriting them. Imported entries stay `needs_verification` until separately verified.
 5. Inspect the catalog:
    ```powershell
    npm run videos:report
@@ -57,13 +57,13 @@ Collection output:
 - `content/import/raw-youtube.json`: channel metadata and each playlist’s ID/title, accessible video count, embeddability summary, and public video IDs/titles/positions/embeddability/durations.
 - `content/import/review.csv`: one editable review row per playlist.
 
-Suggestions are deliberately title-only and conservative: an explicit `Grade 9`–`Grade 12`; `Mathematics`, `Maths`, or `Math`; `Econ` or `Economics`; exact subject names; `Unit N`; and `New curriculum` or `Old curriculum`. Unit names are suggested only when a title explicitly includes text after a unit number and separator. Shared subjects map to both streams, natural-only subjects to `natural`, and social-only subjects to `social`. Unparsed grade, subject, unit number, or unit name stays blank; curriculum is `unknown` if not stated. Review every suggestion manually.
+Suggestions are deliberately title-only and conservative: an explicit `Grade 9`–`Grade 12`; `Mathematics`, `Maths`, or `Math`; `Econ` or `Economics`; exact subject names; `Unit N`; and `New curriculum` or `Old curriculum`. Unit names are taken from title text following the unit number. Shared subjects map to both streams, natural-only subjects to `natural`, and social-only subjects to `social`. `courseLabel` may be set to `Course A` or `Course B` to distinguish separate playlists in a subject. Review every suggestion manually.
 
-The playlist title remains the catalog title, the playlist ID is the YouTube playlist embed target, and API-resolved channel name plus the supplied channel handle are recorded as credits. If any video in a playlist is non-embeddable, that playlist entry is marked non-embeddable so the course page offers the YouTube link rather than embedding that playlist.
+The playlist title remains the catalog title, the playlist ID is the YouTube playlist embed target, and API-resolved channel name plus the supplied channel handle are recorded as credits. Lesson playback uses each video's own embeddability status: embeddable lessons can load in the privacy-enhanced player, while non-embeddable lessons link directly to YouTube.
 
 ## Catalog/library features
 
-The library supports text search and grade, stream, subject, and unit filters. Unit pages show each collected playlist with a lesson list sourced from the raw collection file; selecting a lesson starts the privacy-enhanced playlist at that lesson and loads the thumbnail/player only after pressing play. Non-embeddable playlists show an **Open on YouTube** link instead of an iframe. About and course pages show channel credits.
+The library supports text search and grade, stream, subject, and unit filters. Unit pages show collected lessons grouped by unit references from their titles; selecting a lesson starts the privacy-enhanced playlist at that lesson and loads the thumbnail/player only after pressing play. Non-embeddable videos show an **Open on YouTube** link instead of an iframe. About and course pages show channel credits.
 
 The three original sample placeholders remain in `content/videos.json` and are not real video records. They can be removed manually when you are ready; the review importer does not overwrite or remove hand-edited entries.
 
