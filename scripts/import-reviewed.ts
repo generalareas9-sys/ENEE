@@ -16,6 +16,7 @@ import {
   type Video,
 } from "../src/lib/videos/schema";
 import { rawYoutubeCatalogSchema } from "../src/lib/videos/raw-schema";
+import { groupPlaylistLessons } from "../src/lib/videos/playlist-units";
 
 const requiredHeaders = [
   "playlistId",
@@ -28,6 +29,7 @@ const requiredHeaders = [
   "suggestedUnitNumber",
   "suggestedUnitName",
   "curriculum",
+  "courseLabel",
   "status",
   "notes",
 ];
@@ -131,7 +133,7 @@ async function main(): Promise<void> {
 
   const errors: string[] = [];
   const pending: Video[] = [];
-  const seenIds = new Set<string>();
+  let preservedCount = 0;
   const existingById = new Map(existing.map((video) => [video.id, video]));
 
   for (const { rowNumber, fields } of approved) {
@@ -139,28 +141,6 @@ async function main(): Promise<void> {
     const rawPlaylist = rawPlaylists.get(playlistId);
     if (!playlistId || !rawPlaylist) {
       errors.push(`CSV row ${rowNumber}: playlistId "${playlistId || "(empty)"}" is not present in raw-youtube.json.`);
-      continue;
-    }
-
-    const id = `youtube-playlist-${playlistId}`;
-    if (seenIds.has(id)) {
-      errors.push(`CSV row ${rowNumber}: duplicate approved playlistId "${playlistId}".`);
-      continue;
-    }
-    seenIds.add(id);
-
-    const priorImport = existingById.get(id);
-    if (priorImport) {
-      if (priorImport.youtubeType !== "playlist" || priorImport.youtubeId !== playlistId) {
-        errors.push(`CSV row ${rowNumber}: catalog id "${id}" already belongs to a different entry.`);
-      }
-      continue;
-    }
-    const duplicateYoutubeId = existing.find(
-      (video) => video.youtubeType === "playlist" && video.youtubeId === playlistId,
-    );
-    if (duplicateYoutubeId) {
-      errors.push(`CSV row ${rowNumber}: playlist "${playlistId}" is already present as catalog entry "${duplicateYoutubeId.id}".`);
       continue;
     }
 
@@ -175,6 +155,12 @@ async function main(): Promise<void> {
     if (!unitNumber || unitNumber < 1) issues.push("suggestedUnitNumber must be a positive integer.");
     const curriculumResult = curriculumSchema.safeParse(fields.curriculum);
     if (!curriculumResult.success) issues.push('curriculum must be "new", "old", or "unknown".');
+    const courseLabel = fields.courseLabel
+      ? fields.courseLabel === "Course A" || fields.courseLabel === "Course B"
+        ? fields.courseLabel
+        : null
+      : undefined;
+    if (courseLabel === null) issues.push('courseLabel must be empty, "Course A", or "Course B".');
     if (!rawPlaylist.playlistTitle) issues.push("Raw playlist title is missing.");
     if (!rawPlaylist.videoCount || !rawPlaylist.videos.length) issues.push("Playlist has no accessible public videos.");
 
@@ -192,32 +178,82 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const entry: Video = {
-      id,
-      title: rawPlaylist.playlistTitle,
-      grade,
-      streams,
-      subject: subjectResult.data,
-      unitNumber,
-      unitName: fields.suggestedUnitName,
-      lessonNumber: 1,
-      youtubeType: "playlist",
-      youtubeId: playlistId,
-      channelName: raw.channelName,
-      channelUrl: raw.channelUrl,
-      curriculum: curriculumResult.data,
-      language: "",
-      embeddable: rawPlaylist.allEmbeddable,
-      verificationStatus: "needs_verification",
-    };
-    const validation = videoCatalogSchema.safeParse([...existing, ...pending, entry]);
-    if (!validation.success) {
-      errors.push(`CSV row ${rowNumber}: ${formatValidationIssues(validation.error)}.`);
+    const grouping = groupPlaylistLessons(rawPlaylist.videos, rawPlaylist.playlistTitle);
+    if (!grouping.groups.length) {
+      errors.push(`CSV row ${rowNumber}: no unit groups could be derived from playlist titles.`);
       continue;
     }
-    const validatedEntry = validation.data.at(-1);
-    if (!validatedEntry) throw new Error(`CSV row ${rowNumber}: catalog validation produced no entry.`);
-    pending.push(validatedEntry);
+    const idsForPlaylist = new Set<string>();
+    for (const group of grouping.groups) {
+      const id = grouping.groups.length === 1
+        ? `youtube-playlist-${playlistId}`
+        : `youtube-playlist-${playlistId}-unit-${group.unitNumber}`;
+      if (idsForPlaylist.has(id)) {
+        errors.push(`CSV row ${rowNumber}: duplicate derived unit ${group.unitNumber} for playlist "${playlistId}".`);
+        continue;
+      }
+      idsForPlaylist.add(id);
+
+      const priorImport = existingById.get(id);
+      if (priorImport) {
+        if (priorImport.youtubeType !== "playlist" || priorImport.youtubeId !== playlistId) {
+          errors.push(`CSV row ${rowNumber}: catalog id "${id}" already belongs to a different entry.`);
+        } else {
+          preservedCount += 1;
+        }
+        continue;
+      }
+      const alreadyPresent = [...existing, ...pending].some(
+        (video) =>
+          video.youtubeType === "playlist" &&
+          video.youtubeId === playlistId &&
+          video.grade === grade &&
+          video.subject === subjectResult.data &&
+          video.unitNumber === group.unitNumber &&
+          video.courseLabel === courseLabel,
+      );
+      if (alreadyPresent) {
+        preservedCount += 1;
+        continue;
+      }
+
+      const titleEvidence = [rawPlaylist.playlistTitle, ...group.lessons.map((lesson) => lesson.title)];
+      const hasNewCurriculum = titleEvidence.some((title) => /\bnew\s+curriculum\b/i.test(title));
+      const hasOldCurriculum = titleEvidence.some((title) => /\bold\s+curriculum\b/i.test(title));
+      const curriculum = hasNewCurriculum && !hasOldCurriculum
+        ? "new"
+        : hasOldCurriculum && !hasNewCurriculum
+          ? "old"
+          : "unknown";
+      const entry: Video = {
+        id,
+        title: rawPlaylist.playlistTitle,
+        ...(courseLabel ? { courseLabel } : {}),
+        grade,
+        streams,
+        subject: subjectResult.data,
+        unitNumber: group.unitNumber,
+        unitName: group.unitName || fields.suggestedUnitName,
+        lessonNumber: 1,
+        youtubeType: "playlist",
+        youtubeId: playlistId,
+        channelName: raw.channelName,
+        channelUrl: raw.channelUrl,
+        curriculum,
+        language: "",
+        embeddable: group.lessons.some((lesson) => lesson.embeddable),
+        verificationStatus: "needs_verification",
+      };
+      const validation = videoCatalogSchema.safeParse([...existing, ...pending, entry]);
+      if (!validation.success) {
+        errors.push(`CSV row ${rowNumber}: ${formatValidationIssues(validation.error)}.`);
+        continue;
+      }
+      const validatedEntry = validation.data.at(-1);
+      if (!validatedEntry) throw new Error(`CSV row ${rowNumber}: catalog validation produced no entry.`);
+      pending.push(validatedEntry);
+      idsForPlaylist.add(id);
+    }
   }
 
   if (errors.length) {
@@ -232,8 +268,9 @@ async function main(): Promise<void> {
     throw new Error(`Final video catalog validation failed: ${formatValidationIssues(merged.error)}.`);
   }
   await writeJson(videosPath, merged.data);
-  console.log(`Imported ${pending.length} approved playlist${pending.length === 1 ? "" : "s"} into content/videos.json.`);
-  console.log(`${approved.length - pending.length} already-imported playlist${approved.length - pending.length === 1 ? " was" : "s were"} preserved without overwriting existing entries.`);
+  const importedPlaylistCount = new Set(pending.map((video) => video.youtubeId)).size;
+  console.log(`Imported ${pending.length} course unit entr${pending.length === 1 ? "y" : "ies"} across ${importedPlaylistCount} playlist${importedPlaylistCount === 1 ? "" : "s"} into content/videos.json.`);
+  console.log(`${preservedCount} existing course unit entr${preservedCount === 1 ? "y was" : "ies were"} preserved without overwriting existing entries.`);
 }
 
 main().catch((error: unknown) => {
