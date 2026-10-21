@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseCsv, toCsv } from "../../../scripts/youtube/common";
 import { parsePlaylistTitle } from "../../../scripts/youtube/suggestions";
+import { groupPlaylistLessons } from "./playlist-units";
 import { videoSchema } from "./schema";
 
 describe("YouTube import helpers", () => {
@@ -34,6 +35,44 @@ describe("YouTube import helpers", () => {
       headers,
       ['Grade 11, "Maths"', "Line one\nLine two"],
     ]);
+  });
+
+  it("groups playlist lessons only when their titles state a unit", () => {
+    const grouping = groupPlaylistLessons(
+      [
+        { title: "Grade 12 Physics Unit 1: Mechanics Part 1", position: 0 },
+        { title: "Grade 12 Physics Unit 1: Mechanics Part 2", position: 1 },
+        { title: "Grade 12 Physics Unit 2 Waves Part 1", position: 2 },
+        { title: "Additional video without a unit", position: 3 },
+      ],
+      "Grade 12 Physics",
+    );
+
+    expect(grouping.groups.map(({ unitNumber, unitName, lessons }) => ({
+      unitNumber,
+      unitName,
+      positions: lessons.map((lesson) => lesson.position),
+    }))).toEqual([
+      { unitNumber: 1, unitName: "Mechanics", positions: [0, 1] },
+      { unitNumber: 2, unitName: "Waves", positions: [2] },
+    ]);
+    expect(grouping.unassignedLessons).toEqual([
+      { title: "Additional video without a unit", position: 3 },
+    ]);
+  });
+
+  it("uses one Full Course unit when no title provides unit information", () => {
+    expect(groupPlaylistLessons(
+      [{ title: "Course lesson 1" }, { title: "Course lesson 2" }],
+      "Grade 12 Physics",
+    )).toEqual({
+      groups: [{
+        unitNumber: 1,
+        unitName: "Full Course",
+        lessons: [{ title: "Course lesson 1" }, { title: "Course lesson 2" }],
+      }],
+      unassignedLessons: [],
+    });
   });
 
   it("rejects subject and stream combinations that violate the course rules", () => {
