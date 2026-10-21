@@ -66,6 +66,7 @@ export const reviewHeaders = [
   "suggestedUnitNumber",
   "suggestedUnitName",
   "curriculum",
+  "courseLabel",
   "status",
   "notes",
 ] as const;
