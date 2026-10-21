@@ -29,15 +29,19 @@ export function VideoPlayer({
   startIndex = 0,
   title,
   thumbnailVideoId,
+  youtubeVideoId,
 }: {
   video: Video;
   startIndex?: number;
   title?: string;
   thumbnailVideoId?: string;
+  youtubeVideoId?: string;
 }) {
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
-  const openUrl = youtubeUrl(video);
+  const openUrl = youtubeVideoId
+    ? `https://www.youtube.com/watch?v=${encodeURIComponent(youtubeVideoId)}`
+    : youtubeUrl(video);
   const src = embedUrl(video, startIndex);
   const hasLesson = Boolean(video.youtubeId);
 
